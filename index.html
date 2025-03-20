@@ -1,11 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Password Reset</title>
+  <meta charset="UTF-8">
+  <title>Account Action</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .hidden { display: none; }
+    form { max-width: 300px; margin: auto; }
+    input { width: 100%; padding: 8px; margin: 8px 0; }
+    button { padding: 10px; width: 100%; }
+    .message { text-align: center; margin-top: 20px; }
+  </style>
 </head>
 <body>
-    <h1>Password Reset Requested</h1>
-    <p>Your password has been reset. Please return to the application and log in with your new password.</p>
+  <div id="resetSection" class="hidden">
+    <h1>Reset Your Password</h1>
+    <form id="resetForm">
+      <label for="newPassword">New Password:</label>
+      <input type="password" id="newPassword" name="newPassword" required />
+      <button type="submit">Reset Password</button>
+    </form>
+    <div id="resetMessage" class="message"></div>
+  </div>
+
+  <div id="verifySection" class="hidden">
+    <h1>Email Verification</h1>
+    <p>Your email has been successfully verified. You can now return to the application and log in.</p>
+  </div>
+
+  <script>
+    // Parse URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get("type"); // Expected values: "recover" for reset, "signup" for verification
+    const token = urlParams.get("token");
+
+    if (type === "recover" && token) {
+      // Show password reset UI
+      document.getElementById("resetSection").classList.remove("hidden");
+
+      document.getElementById("resetForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const newPassword = document.getElementById("newPassword").value;
+
+        try {
+          const response = await fetch("https://<YOUR-SUPABASE-PROJECT-URL>/auth/v1/reset", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": "<YOUR-SUPABASE-API-KEY>"
+            },
+            body: JSON.stringify({
+              token: token,
+              password: newPassword
+            })
+          });
+          
+          if (response.ok) {
+            document.getElementById("resetMessage").innerText = "Password reset successful! You can now return to the application.";
+          } else {
+            const errorData = await response.json();
+            document.getElementById("resetMessage").innerText = "Failed to reset password: " + (errorData.error || "Unknown error");
+          }
+        } catch (error) {
+          document.getElementById("resetMessage").innerText = "An error occurred: " + error.message;
+        }
+      });
+      
+    } else if (type === "signup") {
+      // Show email verification message UI
+      document.getElementById("verifySection").classList.remove("hidden");
+    } else {
+      // If parameters don't match, you can show a generic message or redirect
+      document.body.innerHTML = "<h1>Invalid Request</h1><p>The link appears to be invalid.</p>";
+    }
+  </script>
 </body>
 </html>
